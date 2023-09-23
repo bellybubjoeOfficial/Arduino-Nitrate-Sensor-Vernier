@@ -1,0 +1,90 @@
+#include <ArduinoJson.h>
+#include <Firebase_Arduino_WiFiNINA.h>
+#include <WiFiNINA.h>
+#include <VernierLib.h>
+#include <ArduinoJson.h>
+#include <Firebase_Arduino_WiFiNINA_HTTPClient.h>
+#include <Firebase_Arduino_WiFiNINA.h>
+#define FIREBASE_HOST "arduino-nitrate-project-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define FIREBASE_AUTH "ljYYJaVdYnODwSLfxOT9Yp2IivGo1yPJH25YX7V5"
+#define WIFI_SSID "Kang Family"
+#define WIFI_PASSWORD "kang9312109"
+FirebaseData firebaseData;
+String path1 = "/IMU_LSM6DS3";
+String path2 = "/Perungudi";
+String path3 = "";
+String path4 = "";
+String path5 = "";
+String path6 = "";
+String path7 = "";
+String path8 = "";
+String path9 = "";
+String path10 = "";
+String jsonData;
+
+void setup()
+{
+  Serial.begin(9600);
+  delay(1000);
+  Serial.println();
+  Serial.println(" done");
+  Serial.print("Connecting to WiFi…");
+  int status = WL_IDLE_STATUS;
+  while (status != WL_CONNECTED) {
+    status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.print(" IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH, WIFI_SSID, WIFI_PASSWORD);
+  Firebase.reconnectWiFi(true);
+}
+
+void loop()
+{
+  rawCountCheck();
+  delay(2000);
+}
+
+
+void rawCountCheck()
+{
+  float rawcount = analogRead(A2);
+  float voltID = (rawcount/1023)*5;
+  float expoVal = (2.26-voltID)/0.103; 
+  float concentration =  pow(M_E, expoVal);
+  Serial.print(concentration); //print sensor value 
+  Serial.println("ppm");
+  delay(500); //wait half second
+  uploadData(String(concentration));
+ 
+}
+
+
+void uploadData(String data)
+{
+  Serial.println(firebaseData.dataPath() + " = " + jsonData);
+// Push data using pushJSON
+  jsonData = data;
+  //below code change path to whatever path is desired
+  if (Firebase.pushJSON(firebaseData, path2 + "/test/append", jsonData)) {
+    Serial.println(firebaseData.dataPath()); //Should be "/test/append"
+  //New created key/name
+  Serial.println(firebaseData.pushName());
+  //Absolute path of new appended data
+    Serial.println(firebaseData.dataPath() + "/"+ firebaseData.pushName());
+  }
+  else {
+    Serial.println("Error: " + firebaseData.errorReason());
+  }   
+}
+
+
+
+
+
+
+
+
